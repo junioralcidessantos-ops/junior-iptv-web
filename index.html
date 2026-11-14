@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Junior IPTV</title>
+<meta name="theme-color" content="#0b0b0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Junior IPTV">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<style>
+:root{
+  --bg:#0b0b0d; --card:#1a1a1e; --linha:rgba(255,255,255,.08);
+  --txt:#fff; --suave:rgba(255,255,255,.65); --ouro:#FFC107; --erro:#ff6b6b;
+  --topo:env(safe-area-inset-top); --baixo:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{overscroll-behavior-y:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit}
+img{display:block}
+.hide{display:none!important}
+.ouro{background:linear-gradient(90deg,#B8860B,#FFC107,#FFFDE7,#FFC107,#B8860B);background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:brilho 3s linear infinite}
+@keyframes brilho{from{background-position:100% 0}to{background-position:-100% 0}}
+
+/* ---------- abertura ---------- */
+#abertura{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:99}
+#abertura img{width:70vw;max-width:340px;animation:entra 2.2s ease forwards}
+@keyframes entra{0%{opacity:0;transform:scale(.6)}35%{opacity:1;transform:scale(1)}75%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2.6)}}
+
+/* ---------- login ---------- */
+#login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:calc(24px + var(--topo)) 24px 24px;max-width:460px;margin:0 auto}
+#login .logo{width:78%;max-width:300px;margin:0 auto 8px}
+#login .frase{text-align:center;font-weight:800;font-size:24px;margin:4px 0}
+#login .fone{text-align:center;font-weight:800;font-size:20px;margin-bottom:24px}
+.campo{display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:0 14px;margin-bottom:10px}
+.campo input{flex:1;background:none;border:0;color:#fff;padding:16px 0;outline:none;font-size:16px}
+.campo:focus-within{border-color:var(--ouro)}
+.btn{width:100%;padding:16px;border-radius:30px;background:var(--ouro);color:#111;font-weight:800;font-size:16px}
+.btn:disabled{opacity:.5}
+.msg-erro{color:var(--erro);margin:10px 0;min-height:20px}
+
+/* ---------- estrutura principal ---------- */
+#principal{padding-bottom:calc(70px + var(--baixo))}
+.barra{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + var(--topo)) 14px 10px}
+.barra.fixa{position:sticky;background:var(--bg)}
+.barra h1{flex:1;margin:0;font-size:24px;text-shadow:0 2px 6px #000}
+.avatar{width:34px;height:34px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-weight:800}
+.icone{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.icone svg{width:24px;height:24px;fill:#fff}
+.menu{position:absolute;right:12px;top:calc(56px + var(--topo));background:#2a2a2e;border-radius:10px;min-width:220px;z-index:20;overflow:hidden;box-shadow:0 8px 24px #000}
+.menu div,.menu button{display:block;width:100%;text-align:left;padding:14px 16px;border-bottom:1px solid var(--linha)}
+.menu div{color:var(--suave);font-size:14px}
+
+nav{position:fixed;left:0;right:0;bottom:0;background:#141416;display:flex;padding:6px 0 calc(6px + var(--baixo));z-index:10;border-top:1px solid var(--linha)}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--suave);padding:4px 0}
+nav button span.pill{padding:4px 18px;border-radius:16px}
+nav button.ativo{color:#fff}
+nav button.ativo span.pill{background:#1e3a5f}
+nav svg{width:24px;height:24px;fill:currentColor}
+
+/* ---------- banner ---------- */
+.banner{position:relative;height:72vh;max-height:620px;min-height:420px;overflow:hidden}
+.banner .slide{position:absolute;inset:0;opacity:0;transition:opacity .8s}
+.banner .slide.on{opacity:1}
+.banner img{width:100%;height:100%;object-fit:cover}
+.banner .sombra{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,transparent 20%,transparent 55%,var(--bg) 100%)}
+.banner .info{position:absolute;left:0;right:0;bottom:34px;text-align:center;padding:0 24px}
+.banner .titulo{font-size:30px;font-weight:900;letter-spacing:2px;text-transform:uppercase;text-shadow:3px 3px 10px #000}
+.banner .sub{color:rgba(255,255,255,.85);margin-top:6px}
+.pontos{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:6px}
+.pontos i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.4)}
+.pontos i.on{width:18px;background:#fff}
+
+/* ---------- seções e cartões ---------- */
+.secao{display:flex;align-items:center;gap:2px;padding:22px 16px 10px;font-size:20px;font-weight:500}
+.secao svg{width:22px;height:22px;fill:#fff}
+.fileira{display:flex;gap:12px;overflow-x:auto;padding:0 12px 4px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.fileira::-webkit-scrollbar{display:none}
+.fileira>*{scroll-snap-align:start;flex:0 0 auto}
+.rank{width:280px}
+.rank .img{width:100%;aspect-ratio:16/9;border-radius:10px;object-fit:cover;background:var(--card)}
+.rank .lin{display:flex;align-items:center;gap:12px;margin-top:8px}
+.rank .num{font-size:40px;font-weight:900;color:#888}
+.rank .nome{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.rank .nota{color:#888;font-size:13px}
+.capa{width:130px}
+.capa .img{width:100%;aspect-ratio:2/3;border-radius:8px;object-fit:cover;background:var(--card)}
+.capa .nome{font-size:13px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.capa .resta{font-size:11px;color:#888}
+.capa .caixa{position:relative}
+.barrinha{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.3);border-radius:0 0 8px 8px;overflow:hidden}
+.barrinha b{display:block;height:100%;background:var(--ouro)}
+.canal{width:240px}
+.canal .caixa{width:100%;aspect-ratio:16/9;border-radius:10px;background:var(--card);display:flex;align-items:center;justify-content:center}
+.canal .caixa img{max-width:45%;max-height:60%;object-fit:contain}
+.canal .nome{margin:8px 0 0 6px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grade-cat{display:grid;grid-auto-flow:column;grid-template-rows:1fr 1fr;grid-auto-columns:210px;gap:10px;overflow-x:auto;padding:0 12px;scrollbar-width:none}
+.grade-cat::-webkit-scrollbar{display:none}
+.grade-cat button{height:96px;border-radius:10px;background:rgba(255,255,255,.06);text-align:left;padding:0 18px;font-size:16px;font-weight:500}
+.aviso{margin:10px 12px;padding:14px;border-radius:10px;background:var(--ouro);color:#000;font-weight:700}
+.erro-faixa{margin:10px 16px;color:var(--erro)}
+
+/* ---------- TV ao vivo ---------- */
+.rotulo{color:var(--suave);font-size:14px;padding:20px 20px 10px}
+.grupo{margin:0 16px;border-radius:12px;background:rgba(255,255,255,.06);overflow:hidden}
+.grupo button{display:flex;align-items:center;width:100%;padding:18px 20px;text-align:left;font-size:17px;border-bottom:1px solid var(--linha)}
+.grupo button:last-child{border-bottom:0}
+.grupo button span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grupo svg{width:22px;height:22px;fill:rgba(255,255,255,.7)}
+
+/* ---------- telas por cima (lista, série, player) ---------- */
+.sobre{position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.cab{position:sticky;top:0;background:var(--bg);display:flex;align-items:center;gap:6px;padding:calc(8px + var(--topo)) 12px 8px;z-index:2}
+.cab h2{flex:1;margin:0;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.busca{margin:6px 12px 10px}
+.lista-canais .item{display:flex;align-items:center;gap:12px;padding:8px 16px;width:100%;text-align:left}
+.lista-canais .item img{width:52px;height:52px;border-radius:8px;object-fit:contain;background:var(--card)}
+.lista-canais .item span{flex:1}
+.grade-capas{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:12px;padding:6px 12px 30px}
+.grade-capas .capa{width:auto}
+.coracao svg{width:24px;height:24px}
+
+/* série */
+.serie-topo{position:relative;height:78vh;max-height:680px;min-height:460px}
+.serie-topo img{width:100%;height:100%;object-fit:cover}
+.serie-topo .sombra{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,transparent 18%,transparent 50%,var(--bg) 100%)}
+.serie-topo .acoes{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:calc(10px + var(--topo)) 14px}
+.redondo{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+.redondo svg{width:24px;height:24px;fill:#fff}
+.serie-topo .info{position:absolute;left:0;right:0;bottom:14px;text-align:center;padding:0 20px}
+.serie-topo h1{margin:0;font-size:38px;font-weight:900;letter-spacing:6px;text-transform:uppercase;text-shadow:3px 3px 12px #000}
+.serie-topo p{color:rgba(255,255,255,.9);margin:12px 0 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tocar{display:flex;gap:3px;margin:12px 16px}
+.tocar button{background:#fff;color:#000;height:56px;font-weight:600;font-size:17px}
+.tocar .principal{flex:1;border-radius:30px 0 0 30px}
+.tocar .seta{width:90px;border-radius:0 30px 30px 0}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:4px 16px}
+.chips span{border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:7px 12px;font-size:14px}
+.temporada{display:inline-flex;align-items:center;gap:4px;margin:20px 16px 6px;font-size:21px;font-weight:700;background:none;color:#fff}
+.temporada select{position:absolute;opacity:0}
+.ep{width:280px;text-align:left}
+.ep .caixa{position:relative;width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:var(--card)}
+.ep .caixa img{width:100%;height:100%;object-fit:cover}
+.ep .dur{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:4px;font-size:11px}
+.ep .t{font-weight:700;margin-top:8px}
+.ep .s{color:rgba(255,255,255,.8);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bloco{padding:16px}
+.bloco h3{margin:0 0 6px;font-size:20px}
+.bloco p{margin:0;color:rgba(255,255,255,.8)}
+
+/* player */
+#player{position:fixed;inset:0;background:#000;z-index:50;display:flex;align-items:center;justify-content:center}
+#player video{width:100%;height:100%;background:#000}
+#player .fechar{position:absolute;top:calc(10px + var(--topo));left:12px;z-index:2}
+#player .titulo-player{position:absolute;top:calc(18px + var(--topo));left:68px;right:16px;font-weight:600;text-shadow:0 1px 4px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast{position:fixed;left:50%;bottom:calc(90px + var(--baixo));transform:translateX(-50%);background:rgba(40,40,44,.95);padding:10px 16px;border-radius:20px;z-index:60;font-size:14px;max-width:90vw;text-align:center}
+.carregando{display:flex;justify-content:center;padding:40px}
+.carregando i{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--ouro);border-radius:50%;animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.vazio{color:#888;text-align:center;padding:40px 20px}
+</style>
+</head>
+<body>
+
+<div id="abertura"><img src="logo.png" alt="Junior IPTV"></div>
+
+<!-- LOGIN -->
+<div id="login" class="hide">
+  <img class="logo" src="logo.png" alt="Junior IPTV">
+  <div class="frase ouro">Sua diversão é aqui</div>
+  <div class="fone ouro" id="fone-login"></div>
+  <div class="campo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/></svg>
+    <input id="l-usuario" placeholder="Usuário" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+  </div>
+  <div class="campo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9z"/></svg>
+    <input id="l-senha" type="password" placeholder="Senha" autocomplete="current-password">
+  </div>
+  <div class="msg-erro" id="l-erro"></div>
+  <button class="btn" id="l-entrar">Entrar</button>
+</div>
+
+<!-- CARREGANDO / CONTA COM PROBLEMA -->
+<div id="espera" class="hide" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
+  <div class="carregando" id="espera-roda"><i></i></div>
+  <div id="espera-msg">Carregando seus canais…</div>
+  <div id="espera-botoes" class="hide" style="display:flex;gap:10px;margin-top:18px">
+    <button class="btn" style="width:auto;padding:12px 22px" id="e-tentar">Tentar de novo</button>
+    <button class="btn" style="width:auto;padding:12px 22px;background:#333;color:#fff" id="e-sair">Trocar conta</button>
+  </div>
+</div>
+
+<!-- PRINCIPAL -->
+<div id="principal" class="hide"></div>
+<nav id="nav" class="hide"></nav>
+<div id="sobre"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO — mude aqui se precisar
+   ===================================================================== */
+const CONFIG = {
+  URL_CONTROLE: 'https://gist.githubusercontent.com/junioralcidessantos-ops/796d9b122d732c4b5c6fe724d28ce425/raw/junior-iptv.json',
+  TELEFONE: '(64) 9 9299-2305',
+  MINUTOS_VERIFICACAO: 5
+};
+
+/* ---------------------------------------------------------- utilidades */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const enc = encodeURIComponent;
+const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const ler = (k, padrao) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : padrao; } catch (e) { return padrao; } };
+const nota = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return n > 0 ? Math.min(n, 10) : null; };
+const imgPrimeira = v => Array.isArray(v) ? (v.find(x => String(x).startsWith('http')) || null) : (String(v || '').startsWith('http') ? v : null);
+const toast = (t, ms = 2500) => { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), ms); };
+const ICO = {
+  casa:'<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+  tv:'<svg viewBox="0 0 24 24"><path d="M21 6h-7.6l3.3-3.3-.7-.7L12 6 8 2l-.7.7L10.6 6H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm0 14H3V8h18zM9 10v8l7-4z"/></svg>',
+  filme:'<svg viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4z"/></svg>',
+  serie:'<svg viewBox="0 0 24 24"><path d="M21 3H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5v2h8v-2h5a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 14H3V5h18z"/></svg>',
+  busca:'<svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>',
+  seta:'<svg viewBox="0 0 24 24"><path d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></svg>',
+  voltar:'<svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>',
+  engrenagem:'<svg viewBox="0 0 24 24"><path d="M19.1 12.9a7 7 0 0 0 0-1.8l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.6-.9L14.8 3h-4l-.4 2.6a7 7 0 0 0-1.5.9l-2.5-1-2 3.4 2.1 1.6a7 7 0 0 0 0 1.8l-2.1 1.6 2 3.4 2.5-1a7 7 0 0 0 1.5.9l.4 2.6h4l.4-2.6a7 7 0 0 0 1.5-.9l2.5 1 2-3.4zM12.8 15.5a3.5 3.5 0 1 1 3.5-3.5 3.5 3.5 0 0 1-3.5 3.5z"/></svg>',
+  coracao:'<svg viewBox="0 0 24 24" fill="#ff5252"><path d="M12 21.4 10.6 20C5.4 15.4 2 12.3 2 8.5A5.4 5.4 0 0 1 7.5 3 6 6 0 0 1 12 5.1 6 6 0 0 1 16.5 3 5.4 5.4 0 0 1 22 8.5c0 3.8-3.4 6.9-8.6 11.5z"/></svg>',
+  coracaoVazio:'<svg viewBox="0 0 24 24" fill="#999"><path d="M16.5 3A6 6 0 0 0 12 5.1 6 6 0 0 0 7.5 3 5.4 5.4 0 0 0 2 8.5c0 3.8 3.4 6.9 8.6 11.5l1.4 1.3 1.4-1.3C18.6 15.4 22 12.3 22 8.5A5.4 5.4 0 0 0 16.5 3zm-4.4 15.6-.1.1-.1-.1C7.1 14.2 4 11.4 4 8.5A3.4 3.4 0 0 1 7.5 5a3.9 3.9 0 0 1 3.6 2.4h1.9A3.9 3.9 0 0 1 16.5 5 3.4 3.4 0 0 1 20 8.5c0 2.9-3.1 5.7-7.9 10.1z"/></svg>',
+  marcador:'<svg viewBox="0 0 24 24"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2zm-2 8h-2v2h-2v-2H9V9h2V7h2v2h2z"/></svg>',
+  marcado:'<svg viewBox="0 0 24 24" fill="#FFC107"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z"/></svg>',
+  baixo:'<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>'
+};
+
+/* ---------------------------------------------------------- estado */
+let conta = ler('conta', null);            // {server, user, pass}
+let lib = null;                            // canais, filmes, séries
+let destaques = null;
+let fundos = {};                           // imagens largas dos filmes
+let vencimento = null;                     // ms
+let favs = new Set(ler('favs', []));
+let aba = 'inicio';
+let itens = {};                            // key -> item (para os cliques)
+let vigia = null;
+
+/* ---------------------------------------------------------- servidor */
+class ContaErro extends Error { constructor(m, invalida = false) { super(m); this.invalida = invalida; } }
+
+async function baixarControle() {
+  let r;
+  try { r = await fetch(CONFIG.URL_CONTROLE + '?t=' + Date.now(), { cache: 'no-store' }); }
+  catch (e) { throw new Error('Não consegui verificar seu acesso. Confira sua internet.'); }
+  let j;
+  try { j = await r.json(); } catch (e) { throw new Error('Erro no arquivo de controle. Fale com o suporte.'); }
+  const clientes = {};
+  Object.entries(j.clientes || {}).forEach(([k, v]) => clientes[k.trim().toLowerCase()] = v === true);
+  // No navegador o vídeo precisa ser https
+  const servidores = (j.servidores || []).map(s => String(s).trim().replace(/\/+$/, '')
+    .replace(/^http:\/\//i, 'https://').replace(/:80$/, '')).filter(Boolean);
+  return { servidores, clientes };
+}
+
+function verificar(controle, usuario) {
+  const v = controle.clientes[usuario.trim().toLowerCase()];
+  if (v === false) throw new ContaErro('Conta bloqueada. Fale com o suporte.');
+  if (v !== true) throw new ContaErro('Usuário não autorizado neste app.', true);
+}
+
+async function api(c, action, extra = '') {
+  const url = `${c.server}/player_api.php?username=${enc(c.user)}&password=${enc(c.pass)}${action ? '&action=' + action : ''}${extra}`;
+  let r;
+  try { r = await fetch(url); }
+  catch (e) { throw new Error('SEM_CONEXAO'); }
+  if (r.status === 401 || r.status === 403) throw new ContaErro('Usuário ou senha incorretos.', true);
+  if (!r.ok) throw new Error('Servidor respondeu ' + r.status);
+  return r.json();
+}
+
+async function login(c) {
+  const j = await api(c);
+  const u = j && j.user_info;
+  if (!u || Number(u.auth) !== 1) throw new ContaErro('Usuário ou senha incorretos.', true);
+  const st = String(u.status || '').trim().toLowerCase();
+  if (['expired', 'expirado', 'vencido'].includes(st)) throw new ContaErro('Sua assinatura venceu. Fale com o suporte para renovar.');
+  if (['banned', 'disabled', 'banido', 'desativado', 'bloqueado', 'inativo'].includes(st)) throw new ContaErro('Conta bloqueada. Fale com o suporte.');
+  const exp = parseInt(u.exp_date, 10);
+  const venc = exp > 0 ? exp * 1000 : null;
+  if (venc && venc < Date.now()) throw new ContaErro('Sua assinatura venceu. Fale com o suporte para renovar.');
+  const fmts = u.allowed_output_formats || [];
+  return { venc, ext: (!fmts.length || fmts.includes('m3u8')) ? 'm3u8' : 'ts' };
+}
+
+async function conectar(servidores, preferido, user, pass) {
+  if (!servidores.length) throw new Error('Nenhum servidor configurado. Fale com o suporte.');
+  const ordem = [...new Set([preferido, ...servidores].filter(s => s && servidores.includes(s)))];
+  let ultimo = null;
+  for (const s of ordem) {
+    const c = { server: s, user, pass };
+    try { const info = await login(c); return { c, info }; }
+    catch (e) {
+      if (e instanceof ContaErro && !e.invalida) throw e;
+      ultimo = e;
+    }
+  }
+  if (ultimo && ultimo.message === 'SEM_CONEXAO') throw new Error('Não consegui falar com o servidor. Tente de novo em alguns minutos.');
+  throw ultimo || new ContaErro('Usuário ou senha incorretos.', true);
+}
+
+async function carregarBiblioteca(c, ext) {
+  const b = c.server, u = enc(c.user), p = enc(c.pass);
+  const pega = a => api(c, a).catch(() => []);
+  const [lc, mc, sc, l, m, s] = await Promise.all([
+    pega('get_live_categories'), pega('get_vod_categories'), pega('get_series_categories'),
+    pega('get_live_streams'), pega('get_vod_streams'), pega('get_series')
+  ]);
+  const cats = a => (Array.isArray(a) ? a : []).map(x => ({ id: String(x.category_id), nome: x.category_name }));
+  const arr = a => Array.isArray(a) ? a : [];
+  return {
+    liveCats: cats(lc), movieCats: cats(mc), seriesCats: cats(sc),
+    live: arr(l).map(x => ({ key: 'L:' + x.stream_id, id: String(x.stream_id), nome: x.name, icone: x.stream_icon || null,
+      cat: String(x.category_id), tipo: 'live', url: `${b}/live/${u}/${p}/${x.stream_id}.${ext}`, add: +x.added || 0 })),
+    movies: arr(m).map(x => ({ key: 'V:' + x.stream_id, id: String(x.stream_id), nome: x.name, icone: x.stream_icon || null,
+      cat: String(x.category_id), tipo: 'filme', url: `${b}/movie/${u}/${p}/${x.stream_id}.${x.container_extension || 'mp4'}`,
+      nota: nota(x.rating), add: +x.added || 0 })),
+    series: arr(s).map(x => ({ key: 'S:' + x.series_id, id: String(x.series_id), nome: x.name, icone: x.cover || null,
+      cat: String(x.category_id), tipo: 'serie', url: null, nota: nota(x.rating), add: +x.last_modified || 0,
+      fundo: imgPrimeira(x.backdrop_path) }))
+  };
+}
+
+const maisNovo = (a, b) => (b.add - a.add) || ((+b.id || 0) - (+a.id || 0));
+function montarDestaques(L) {
+  const filmes = [...L.movies].sort(maisNovo), series = [...L.series].sort(maisNovo);
+  const dest = l => l.slice(0, 300).filter(x => x.nota).sort((a, b) => b.nota - a.nota).slice(0, 10);
+  const fd = dest(filmes), sd = dest(series);
+  let banner = [fd[0], sd[0], fd[1], sd[1], fd[2]].filter(Boolean);
+  if (!banner.length) banner = filmes.slice(0, 5);
+  return { banner, fd, sd, ultFilmes: filmes.slice(0, 20), ultCanais: [...L.live].sort(maisNovo).slice(0, 15), ultSeries: series.slice(0, 20) };
+}
+
+async function buscarFundos(c, lista) {
+  const alvos = lista.filter(x => x.tipo === 'filme' && !fundos[x.key]);
+  await Promise.all(alvos.map(async f => {
+    try {
+      const j = await api(c, 'get_vod_info', '&vod_id=' + f.id);
+      const i = j.info || {};
+      const img = imgPrimeira(i.backdrop_path) || imgPrimeira(i.cover_big) || imgPrimeira(i.movie_image);
+      if (img) fundos[f.key] = img;
+    } catch (e) {}
+  }));
+}
+
+/* ---------------------------------------------------------- telas: login e espera */
+function mostrar(id) {
+  ['login', 'espera', 'principal'].forEach(x => $('#' + x).classList.toggle('hide', x !== id));
+  $('#nav').classList.toggle('hide', id !== 'principal');
+}
+
+function telaLogin(msg = '') {
+  mostrar('login');
+  $('#fone-login').textContent = CONFIG.TELEFONE;
+  $('#l-erro').textContent = msg;
+  $('#l-entrar').disabled = false;
+  $('#l-entrar').textContent = 'Entrar';
+}
+
+function telaEspera(msg, comBotoes = false) {
+  mostrar('espera');
+  $('#espera-msg').textContent = msg;
+  $('#espera-roda').classList.toggle('hide', comBotoes);
+  $('#espera-botoes').classList.toggle('hide', !comBotoes);
+}
+
+async function entrar(user, pass, preferido) {
+  const controle = await baixarControle();
+  verificar(controle, user);
+  const { c, info } = await conectar(controle.servidores, preferido, user, pass);
+  const L = await carregarBiblioteca(c, info.ext);
+  conta = c; guardar('conta', c);
+  lib = L; vencimento = info.venc;
+  destaques = montarDestaques(L);
+  itens = {};
+  [...L.live, ...L.movies, ...L.series].forEach(x => itens[x.key] = x);
+  buscarFundos(c, [...destaques.banner, ...destaques.fd]).then(() => { if (aba === 'inicio' || aba === 'filmes') render(); });
+}
+
+async function iniciar() {
+  if (!conta) return telaLogin();
+  telaEspera('Carregando seus canais…');
+  try {
+    await entrar(conta.user, conta.pass, conta.server);
+    mostrar('principal'); render(); vigiar();
+  } catch (e) {
+    if (e instanceof ContaErro && e.invalida) { sair(); return telaLogin(e.message); }
+    telaEspera(e.message || 'Erro ao carregar.', true);
+  }
+}
+
+$('#l-entrar').onclick = async () => {
+  const u = $('#l-usuario').value.trim(), s = $('#l-senha').value.trim();
+  if (!u || !s) return;
+  $('#l-entrar').disabled = true; $('#l-entrar').textContent = 'Carregando seus canais…'; $('#l-erro').textContent = '';
+  try {
+    await entrar(u, s, null);
+    mostrar('principal'); aba = 'inicio'; render(); vigiar();
+  } catch (e) { telaLogin(e.message || 'Erro ao entrar.'); }
+};
+$('#l-senha').addEventListener('keydown', e => { if (e.key === 'Enter') $('#l-entrar').click(); });
+$('#e-tentar').onclick = iniciar;
+$('#e-sair').onclick = () => { sair(); telaLogin(); };
+
+function sair() {
+  conta = null; lib = null; destaques = null; fundos = {}; vencimento = null;
+  try { localStorage.removeItem('conta'); } catch (e) {}
+  if (vigia) clearInterval(vigia);
+  $('#sobre').innerHTML = '';
+}
+
+/* Confere de tempos em tempos se continua liberado (bloqueou no Gist ou no painel: tranca) */
+function vigiar() {
+  if (vigia) clearInterval(vigia);
+  vigia = setInterval(async () => {
+    if (!conta) return;
+    try {
+      try { verificar(await baixarControle(), conta.user); } catch (e) { if (e instanceof ContaErro) throw e; }
+      await login(conta);
+    } catch (e) {
+      if (!(e instanceof ContaErro)) return;   // sem internet: tenta depois
+      fecharPlayer(); $('#sobre').innerHTML = '';
+      if (e.invalida) { sair(); telaLogin(e.message); } else telaEspera(e.message, true);
+    }
+  }, CONFIG.MINUTOS_VERIFICACAO * 60000);
+}
+
+/* ---------------------------------------------------------- progresso ("continuar assistindo") */
+const progresso = () => ler('progresso', []);
+function salvarProgresso(url, titulo, capa, pos, dur) {
+  if (!dur || !isFinite(dur) || url.includes('/live/')) return;
+  let l = progresso().filter(r => r.url !== url);
+  const terminou = pos >= dur * 0.95 || dur - pos < 60;
+  if (!terminou && pos >= 30) l.unshift({ url, titulo, capa, pos, dur, quando: Date.now() });
+  guardar('progresso', l.slice(0, 30));
+}
+const posicaoSalva = url => (progresso().find(r => r.url === url) || {}).pos || 0;
+
+/* ---------------------------------------------------------- cartões */
+const img = (src, cls, alt = '') => src ? `<img class="${cls}" src="${esc(src)}" alt="${esc(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : `<div class="${cls}"></div>`;
+const secao = (t, acao = '') => `<button class="secao" ${acao}>${esc(t)}${ICO.seta}</button>`;
+const cartaoRank = (x, i) => `<button class="rank" data-abrir="${x.key}">${img(fundos[x.key] || x.fundo || x.icone, 'img')}
+  <div class="lin"><div class="num">${i + 1}</div><div><div class="nome">${esc(x.nome)}</div>${x.nota ? `<div class="nota">${x.nota.toFixed(1)}/10</div>` : ''}</div></div></button>`;
+const cartaoCapa = x => `<button class="capa" data-abrir="${x.key}"><div class="caixa">${img(x.icone, 'img', x.nome)}${favs.has(x.key) ? `<span style="position:absolute;top:6px;right:6px" class="coracao">${ICO.coracao}</span>` : ''}</div><div class="nome">${esc(x.nome)}</div></button>`;
+const cartaoCanal = x => `<button class="canal" data-abrir="${x.key}"><div class="caixa">${x.icone ? `<img src="${esc(x.icone)}" loading="lazy" onerror="this.remove()">` : ''}</div><div class="nome">${esc(x.nome)}</div></button>`;
+const cartaoContinuar = r => `<button class="capa" data-continuar="${esc(r.url)}"><div class="caixa">${img(r.capa, 'img', r.titulo)}<div class="barrinha"><b style="width:${Math.min(100, r.pos / r.dur * 100)}%"></b></div></div>
+  <div class="nome">${esc(r.titulo)}</div><div class="resta">Restam ${Math.max(1, Math.round((r.dur - r.pos) / 60))} min</div></button>`;
+const fileira = (html) => `<div class="fileira">${html}</div>`;
+
+function barra(titulo, fixa = false) {
+  const ini = (conta?.user || '?').slice(0, 1).toUpperCase();
+  return `<div class="barra ${fixa ? 'fixa' : ''}"><h1>${esc(titulo)}</h1><div class="avatar">${esc(ini)}</div>
+    <button class="icone" data-menu>${ICO.engrenagem}</button></div>`;
+}
+
+function faixaVencimento() {
+  if (!vencimento) return '';
+  const dias = Math.floor((vencimento - Date.now()) / 86400000);
+  if (dias < 0 || dias > 3) return '';
+  const data = new Date(vencimento).toLocaleDateString('pt-BR');
+  const t = dias === 0 ? 'Sua assinatura vence hoje' : dias === 1 ? 'Sua assinatura vence amanhã' : `Sua assinatura vence em ${dias} dias`;
+  return `<div class="aviso">⚠ ${t} (${data}). Renove: ${esc(CONFIG.TELEFONE)}</div>`;
+}
+
+function banner(lista) {
+  if (!lista.length) return `<div style="height:calc(70px + var(--topo))"></div>`;
+  const slides = lista.map((x, i) => `<div class="slide ${i === 0 ? 'on' : ''}" data-abrir="${x.key}">${img(fundos[x.key] || x.fundo || x.icone, '')}
+    <div class="sombra"></div><div class="info"><div class="titulo">${esc(x.nome)}</div>
+    <div class="sub">${x.tipo === 'serie' ? 'Série' : 'Filme'}${x.nota ? '   •   ★ ' + x.nota.toFixed(1) : ''}</div></div></div>`).join('');
+  const pontos = lista.map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('');
+  return `<div class="banner" data-banner>${slides}<div class="pontos">${pontos}</div></div>`;
+}
+
+let girar = null;
+function animarBanner() {
+  if (girar) clearInterval(girar);
+  const b = document.querySelector('[data-banner]');
+  if (!b) return;
+  let i = 0;
+  const s = b.querySelectorAll('.slide'), p = b.querySelectorAll('.pontos i');
+  if (s.length < 2) return;
+  girar = setInterval(() => {
+    s[i].classList.remove('on'); p[i].classList.remove('on');
+    i = (i + 1) % s.length;
+    s[i].classList.add('on'); p[i].classList.add('on');
+  }, 6000);
+}
+
+/* ---------------------------------------------------------- abas */
+function render() {
+  if (!lib) return;
+  const el = $('#principal');
+  if (aba === 'inicio') el.innerHTML = abaInicio();
+  else if (aba === 'tv') el.innerHTML = abaTV();
+  else if (aba === 'filmes') el.innerHTML = abaCatalogo('filme');
+  else if (aba === 'series') el.innerHTML = abaCatalogo('serie');
+  else el.innerHTML = abaBusca();
+  renderNav();
+  animarBanner();
+  if (aba === 'busca') { const i = $('#q'); i.oninput = () => { $('#res').innerHTML = resultadoBusca(i.value); }; }
+}
+
+function renderNav() {
+  const abas = [['inicio', 'Início', ICO.casa], ['tv', 'Ao vivo', ICO.tv], ['filmes', 'Filmes', ICO.filme], ['series', 'Séries', ICO.serie], ['busca', 'Buscar', ICO.busca]];
+  $('#nav').innerHTML = abas.map(([id, nome, ic]) => `<button class="${aba === id ? 'ativo' : ''}" data-aba="${id}"><span class="pill">${ic}</span>${aba === id ? nome : ''}</button>`).join('');
+}
+
+function abaInicio() {
+  const d = destaques, cont = progresso();
+  const fv = [...favs].map(k => itens[k]).filter(Boolean);
+  return `<div style="position:relative">${banner(d.banner)}${barra('Início')}</div>
+    ${faixaVencimento()}
+    ${cont.length ? secao('Continuar assistindo') + fileira(cont.map(cartaoContinuar).join('')) : ''}
+    ${d.fd.length ? secao('Filmes em destaque hoje', 'data-aba="filmes"') + fileira(d.fd.map(cartaoRank).join('')) : ''}
+    ${d.sd.length ? secao('Séries em destaque hoje', 'data-aba="series"') + fileira(d.sd.map(cartaoRank).join('')) : ''}
+    ${fv.length ? secao('Meus favoritos', 'data-lista="favs"') + fileira(fv.map(x => x.tipo === 'live' ? cartaoCanal(x) : cartaoCapa(x)).join('')) : ''}
+    ${d.ultFilmes.length ? secao('Últimos filmes', 'data-lista="ult-filme"') + fileira(d.ultFilmes.map(cartaoCapa).join('')) : ''}
+    ${d.ultCanais.length ? secao('Últimos canais adicionados', 'data-lista="ult-live"') + fileira(d.ultCanais.map(cartaoCanal).join('')) : ''}
+    ${d.ultSeries.length ? secao('Últimas séries', 'data-lista="ult-serie"') + fileira(d.ultSeries.map(cartaoCapa).join('')) : ''}`;
+}
+
+const usadas = (lista, cats) => { const s = new Set(lista.map(x => x.cat)); return cats.filter(c => s.has(c.id)); };
+
+function abaCatalogo(tipo) {
+  const filme = tipo === 'filme', d = destaques;
+  const todos = filme ? lib.movies : lib.series, dest = filme ? d.fd : d.sd, ult = filme ? d.ultFilmes : d.ultSeries;
+  const cats = usadas(todos, filme ? lib.movieCats : lib.seriesCats);
+  const titulo = filme ? 'Filmes' : 'Séries';
+  return `<div style="position:relative">${banner((dest.length ? dest : ult).slice(0, 5))}${barra(titulo)}</div>
+    ${dest.length ? secao(titulo + ' em destaque hoje') + fileira(dest.map(cartaoRank).join('')) : ''}
+    ${ult.length ? secao(filme ? 'Últimos filmes' : 'Últimas séries', `data-lista="ult-${tipo}"`) + fileira(ult.map(cartaoCapa).join('')) : ''}
+    ${cats.length ? secao('Categorias', `data-lista="todos-${tipo}"`) + `<div class="grade-cat">${cats.map(c => `<button data-cat="${tipo}|${esc(c.id)}">${esc(c.nome)}</button>`).join('')}</div>` : ''}`;
+}
+
+function abaTV() {
+  const cats = usadas(lib.live, lib.liveCats);
+  const nFav = lib.live.filter(x => favs.has(x.key)).length;
+  return `${barra('TV ao vivo', true)}${faixaVencimento()}
+    <div class="rotulo">Atalhos</div>
+    <div class="grupo">
+      <button data-lista="ult-live"><span>Adicionados recentemente</span>${ICO.seta}</button>
+      <button data-lista="fav-live"><span>Favoritos (${nFav})</span>${ICO.seta}</button>
+      <button data-lista="todos-live"><span>Todos os canais (${lib.live.length})</span>${ICO.seta}</button>
+    </div>
+    <div class="rotulo">Categorias</div>
+    <div class="grupo">${cats.map(c => `<button data-cat="live|${esc(c.id)}"><span>${esc(c.nome)}</span>${ICO.seta}</button>`).join('')}</div>`;
+}
+
+function abaBusca() {
+  return `${barra('Buscar', true)}<div class="campo busca">${ICO.busca.replace('<svg', '<svg width="20" height="20" fill="#fff"')}<input id="q" placeholder="Buscar canais, filmes e séries" autocomplete="off"></div>
+    <div id="res"><div class="vazio">Digite pelo menos 2 letras</div></div>`;
+}
+
+function resultadoBusca(q) {
+  q = q.trim().toLowerCase();
+  if (q.length < 2) return '<div class="vazio">Digite pelo menos 2 letras</div>';
+  const r = [...lib.live, ...lib.movies, ...lib.series].filter(x => x.nome.toLowerCase().includes(q)).slice(0, 300);
+  return r.length ? `<div class="lista-canais">${r.map(linhaCanal).join('')}</div>` : '<div class="vazio">Nada encontrado.</div>';
+}
+
+const linhaCanal = x => `<button class="item" data-abrir="${x.key}">${x.icone ? `<img src="${esc(x.icone)}" loading="lazy" onerror="this.style.visibility='hidden'">` : '<img style="visibility:hidden">'}
+  <span>${esc(x.nome)}</span><span class="coracao" style="flex:0" data-fav="${x.key}">${favs.has(x.key) ? ICO.coracao : ICO.coracaoVazio}</span></button>`;
+
+/* ---------------------------------------------------------- lista aberta (categoria, últimos, favoritos) */
+function abrirLista(titulo, lista, tipo) {
+  const html = q => {
+    const l = q ? lista.filter(x => x.nome.toLowerCase().includes(q.toLowerCase())) : lista;
+    if (!l.length) return '<div class="vazio">Nada por aqui.</div>';
+    return tipo === 'live' ? `<div class="lista-canais">${l.map(linhaCanal).join('')}</div>` : `<div class="grade-capas">${l.map(cartaoCapa).join('')}</div>`;
+  };
+  const d = document.createElement('div');
+  d.className = 'sobre';
+  d.innerHTML = `<div class="cab"><button class="redondo" data-fechar>${ICO.voltar}</button><h2>${esc(titulo)}</h2><span style="color:#888">${lista.length}</span></div>
+    <div class="campo busca">${ICO.busca.replace('<svg', '<svg width="20" height="20" fill="#fff"')}<input placeholder="Buscar nesta lista"></div><div class="conteudo">${html('')}</div>`;
+  d.querySelector('input').oninput = e => d.querySelector('.conteudo').innerHTML = html(e.target.value.trim());
+  $('#sobre').appendChild(d);
+  history.pushState({ camada: true }, '');
+}
+
+function listaPorNome(n) {
+  const fv = [...favs].map(k => itens[k]).filter(Boolean);
+  const mapa = {
+    'favs': ['Meus favoritos', fv, 'misto'],
+    'fav-live': ['Favoritos', fv.filter(x => x.tipo === 'live'), 'live'],
+    'ult-filme': ['Últimos filmes', [...lib.movies].sort(maisNovo).slice(0, 200), 'filme'],
+    'ult-serie': ['Últimas séries', [...lib.series].sort(maisNovo).slice(0, 200), 'serie'],
+    'ult-live': ['Adicionados recentemente', [...lib.live].sort(maisNovo).slice(0, 100), 'live'],
+    'todos-filme': ['Todos os filmes', lib.movies, 'filme'],
+    'todos-serie': ['Todas as séries', lib.series, 'serie'],
+    'todos-live': ['Todos os canais', lib.live, 'live']
+  };
+  const [t, l, tipo] = mapa[n];
+  abrirLista(t, l, tipo === 'misto' ? 'filme' : tipo);
+}
+
+/* ---------------------------------------------------------- série */
+async function abrirSerie(s) {
+  const d = document.createElement('div');
+  d.className = 'sobre';
+  const fav = () => favs.has(s.key) ? ICO.marcado : ICO.marcador;
+  d.innerHTML = `<div class="serie-topo">${img(s.icone, '')}<div class="sombra"></div>
+      <div class="acoes"><button class="redondo" data-fechar>${ICO.voltar}</button><button class="redondo" data-favserie>${fav()}</button></div>
+      <div class="info"><h1>${esc(s.nome)}</h1><p class="sinopse"></p></div></div>
+    <div class="tocar"><button class="principal" disabled>Carregando…</button><button class="seta">${ICO.baixo.replace('fill="#fff"', 'fill="#000"')}</button></div>
+    <div class="chips"></div><div class="temps"></div><div class="eps"><div class="carregando"><i></i></div></div><div class="extra"></div>`;
+  $('#sobre').appendChild(d);
+  history.pushState({ camada: true }, '');
+  d.querySelector('[data-favserie]').onclick = () => { alternarFav(s.key); d.querySelector('[data-favserie]').innerHTML = fav(); };
+
+  let j;
+  try { j = await api(conta, 'get_series_info', '&series_id=' + s.id); }
+  catch (e) { d.querySelector('.eps').innerHTML = '<div class="vazio">Erro ao carregar a série.</div>'; return; }
+  const info = j.info || {};
+  const grupos = j.episodes ? (Array.isArray(j.episodes) ? j.episodes : Object.values(j.episodes)) : [];
+  const b = conta.server, u = enc(conta.user), p = enc(conta.pass);
+  const eps = grupos.flat().map(e => ({
+    id: String(e.id), titulo: e.title || '', temp: +e.season || 1, num: +e.episode_num || 0,
+    url: `${b}/series/${u}/${p}/${e.id}.${e.container_extension || 'mp4'}`,
+    capa: imgPrimeira(e.info && e.info.movie_image), sinopse: (e.info && e.info.plot) || '', dur: (e.info && e.info.duration) || ''
+  })).sort((a, c) => a.temp - c.temp || a.num - c.num);
+
+  if (info.plot) d.querySelector('.sinopse').textContent = info.plot;
+  const cat = (lib.seriesCats.find(c => c.id === s.cat) || {}).nome;
+  const lanc = info.releaseDate || info.release_date;
+  const mes = lanc ? new Date(lanc + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(' de ', ' ') : null;
+  const n = nota(info.rating) || s.nota;
+  const host = conta.server.replace(/^https?:\/\//, '').replace(/[:/].*$/, '');
+  d.querySelector('.chips').innerHTML = [host, cat, n ? n.toFixed(1) : null, mes, info.genre].filter(Boolean).map(c => `<span>${esc(c)}</span>`).join('');
+  const extra = [['Elenco', info.cast], ['Direção', info.director]].filter(x => x[1]);
+  d.querySelector('.extra').innerHTML = extra.map(([t, v]) => `<div class="bloco"><h3>${t}</h3><p>${esc(v)}</p></div>`).join('');
+
+  if (!eps.length) { d.querySelector('.eps').innerHTML = '<div class="vazio">Nenhum episódio encontrado.</div>'; d.querySelector('.principal').textContent = 'Indisponível'; return; }
+
+  const prog = Object.fromEntries(progresso().map(r => [r.url, r]));
+  const comecados = eps.filter(e => prog[e.url]).sort((a, c) => prog[c.url].quando - prog[a.url].quando);
+  const proximo = comecados[0] || eps[0];
+  const temps = [...new Set(eps.map(e => e.temp))];
+  let temp = proximo.temp;
+  const fundo = imgPrimeira(info.backdrop_path) || s.icone;
+  const tocar = e => abrirPlayer(e.url, `${s.nome} - T${e.temp}E${e.num}${e.titulo ? ' ' + e.titulo : ''}`, s.icone);
+
+  const btn = d.querySelector('.principal');
+  btn.disabled = false;
+  btn.innerHTML = ICO.play + ' ' + (prog[proximo.url] ? `Continuar T${proximo.temp} E${proximo.num}` : `Temporada ${proximo.temp} Episódio ${proximo.num}`);
+  btn.onclick = () => tocar(proximo);
+
+  const seletor = () => `<label class="temporada">Temporada ${temp} ${ICO.baixo}<select>${temps.map(t => `<option value="${t}" ${t === temp ? 'selected' : ''}>Temporada ${t}</option>`).join('')}</select></label>`;
+  const desenhar = () => {
+    d.querySelector('.temps').innerHTML = seletor();
+    d.querySelector('.temps select').onchange = ev => { temp = +ev.target.value; desenhar(); };
+    d.querySelector('.eps').innerHTML = fileira(eps.filter(e => e.temp === temp).map((e, i) => {
+      const r = prog[e.url];
+      return `<button class="ep" data-ep="${i}"><div class="caixa">${img(e.capa || fundo, '')}
+        ${e.dur ? `<span class="dur">${esc(e.dur.replace(/^00:/, ''))}</span>` : ''}
+        ${r ? `<div class="barrinha" style="border-radius:0"><b style="width:${Math.min(100, r.pos / r.dur * 100)}%"></b></div>` : ''}</div>
+        <div class="t">Temporada ${e.temp} Episódio ${e.num}</div><div class="s">${esc(e.sinopse || e.titulo)}</div></button>`;
+    }).join(''));
+    const daTemp = eps.filter(e => e.temp === temp);
+    d.querySelectorAll('[data-ep]').forEach(b => b.onclick = () => tocar(daTemp[+b.dataset.ep]));
+  };
+  desenhar();
+  d.querySelector('.seta').onclick = () => d.querySelector('.temps select').focus();
+  if (temps.length < 2) d.querySelector('.seta').disabled = true;
+}
+
+/* ---------------------------------------------------------- player */
+let hls = null, salvarTimer = null, atual = null;
+function abrirPlayer(url, titulo, capa) {
+  fecharPlayer();
+  atual = { url, titulo, capa };
+  const p = document.createElement('div');
+  p.id = 'player';
+  p.innerHTML = `<button class="redondo fechar" data-fecharplayer>${ICO.voltar}</button><div class="titulo-player">${esc(titulo)}</div>
+    <video controls playsinline autoplay></video>`;
+  document.body.appendChild(p);
+  history.pushState({ camada: true, player: true }, '');
+  const v = p.querySelector('video');
+  const inicio = url.includes('/live/') ? 0 : posicaoSalva(url);
+
+  if (url.includes('.m3u8') && !v.canPlayType('application/vnd.apple.mpegurl') && window.Hls && Hls.isSupported()) {
+    hls = new Hls(); hls.loadSource(url); hls.attachMedia(v);
+  } else v.src = url;
+
+  v.addEventListener('loadedmetadata', () => {
+    if (inicio > 0) { v.currentTime = inicio; toast('Continuando de ' + tempo(inicio)); }
+  }, { once: true });
+  v.addEventListener('error', () => {
+    const mkv = /\.(mkv|avi)$/i.test(url);
+    toast(mkv ? 'Este vídeo está num formato que o navegador do iPhone não abre. Tente outro título.' : 'Não foi possível reproduzir este vídeo.', 5000);
+  });
+  v.play().catch(() => {});
+  salvarTimer = setInterval(() => salvarProgresso(url, titulo, capa, v.currentTime, v.duration), 10000);
+}
+
+function fecharPlayer() {
+  const p = $('#player');
+  if (!p) return;
+  const v = p.querySelector('video');
+  if (atual && v) salvarProgresso(atual.url, atual.titulo, atual.capa, v.currentTime, v.duration);
+  clearInterval(salvarTimer);
+  if (hls) { hls.destroy(); hls = null; }
+  if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+  p.remove();
+  atual = null;
+  if (aba === 'inicio') render();
+}
+const tempo = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+window.addEventListener('pagehide', () => { const v = $('#player video'); if (atual && v) salvarProgresso(atual.url, atual.titulo, atual.capa, v.currentTime, v.duration); });
+
+/* ---------------------------------------------------------- favoritos */
+function alternarFav(k) {
+  favs.has(k) ? favs.delete(k) : favs.add(k);
+  guardar('favs', [...favs]);
+}
+
+/* ---------------------------------------------------------- cliques (um só ouvinte para tudo) */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-fav],[data-abrir],[data-continuar],[data-aba],[data-lista],[data-cat],[data-fechar],[data-fecharplayer],[data-menu],[data-sair],[data-atualizar]');
+  if (!t) { const m = $('.menu'); if (m && !e.target.closest('.menu')) m.remove(); return; }
+  const ds = t.dataset;
+  if ('fav' in ds) { e.stopPropagation(); alternarFav(ds.fav); t.innerHTML = favs.has(ds.fav) ? ICO.coracao : ICO.coracaoVazio; return; }
+  if ('abrir' in ds) {
+    const x = itens[ds.abrir]; if (!x) return;
+    if (x.tipo === 'serie') abrirSerie(x); else abrirPlayer(x.url, x.nome, x.icone);
+    return;
+  }
+  if ('continuar' in ds) { const r = progresso().find(r => r.url === ds.continuar); if (r) abrirPlayer(r.url, r.titulo, r.capa); return; }
+  if ('aba' in ds) { aba = ds.aba; $('#sobre').innerHTML = ''; window.scrollTo(0, 0); render(); return; }
+  if ('lista' in ds) { listaPorNome(ds.lista); return; }
+  if ('cat' in ds) {
+    const [tipo, id] = ds.cat.split('|');
+    const fonte = tipo === 'live' ? lib.live : tipo === 'filme' ? lib.movies : lib.series;
+    const cats = tipo === 'live' ? lib.liveCats : tipo === 'filme' ? lib.movieCats : lib.seriesCats;
+    abrirLista((cats.find(c => c.id === id) || {}).nome || 'Categoria', fonte.filter(x => x.cat === id), tipo);
+    return;
+  }
+  if ('fechar' in ds) { history.back(); return; }
+  if ('fecharplayer' in ds) { history.back(); return; }
+  if ('menu' in ds) {
+    const old = $('.menu'); if (old) { old.remove(); return; }
+    const m = document.createElement('div'); m.className = 'menu';
+    const venc = vencimento ? new Date(vencimento).toLocaleDateString('pt-BR') : null;
+    m.innerHTML = `<div>Usuário: ${esc(conta.user)}</div>${venc ? `<div>Vence em ${venc}</div>` : ''}
+      <button data-atualizar>Atualizar lista</button><button data-sair>Sair</button>`;
+    t.closest('.barra').appendChild(m);
+    return;
+  }
+  if ('atualizar' in ds) { $('.menu')?.remove(); iniciar(); return; }
+  if ('sair' in ds) { $('.menu')?.remove(); sair(); telaLogin(); return; }
+});
+
+/* Botão/gesto "voltar" fecha o player ou a tela de cima */
+window.addEventListener('popstate', () => {
+  if ($('#player')) return fecharPlayer();
+  const camadas = $('#sobre').children;
+  if (camadas.length) { camadas[camadas.length - 1].remove(); if (aba === 'inicio') render(); return; }
+  if (aba !== 'inicio' && lib) { aba = 'inicio'; render(); }
+});
+
+/* ---------------------------------------------------------- início */
+function fimAbertura() { const a = $('#abertura'); if (!a) return; a.remove(); iniciar(); }
+setTimeout(fimAbertura, 2200);
+$('#abertura').onclick = fimAbertura;
+</script>
+</body>
+</html>
