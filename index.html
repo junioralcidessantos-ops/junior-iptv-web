@@ -160,6 +160,8 @@ nav svg{width:24px;height:24px;fill:currentColor}
 #player video{width:100%;height:100%;background:#000}
 #player .fechar{position:absolute;top:calc(10px + var(--topo));left:12px;z-index:2}
 #player .titulo-player{position:absolute;top:calc(18px + var(--topo));left:68px;right:16px;font-weight:600;text-shadow:0 1px 4px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.diag{position:absolute;left:16px;right:16px;bottom:calc(30px + var(--baixo));background:rgba(20,20,24,.95);border:1px solid #444;border-radius:12px;padding:16px;z-index:3}
+.diag p{margin:8px 0}
 .toast{position:fixed;left:50%;bottom:calc(90px + var(--baixo));transform:translateX(-50%);background:rgba(40,40,44,.95);padding:10px 16px;border-radius:20px;z-index:60;font-size:14px;max-width:90vw;text-align:center}
 .carregando{display:flex;justify-content:center;padding:40px}
 .carregando i{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--ouro);border-radius:50%;animation:gira 1s linear infinite}
@@ -698,10 +700,29 @@ function abrirPlayer(url, titulo, capa) {
   v.addEventListener('loadedmetadata', () => {
     if (inicio > 0) { v.currentTime = inicio; toast('Continuando de ' + tempo(inicio)); }
   }, { once: true });
-  v.addEventListener('error', () => {
+  // Diagnóstico: mostra o motivo e permite testar o link direto
+  const falhou = (motivo) => {
+    if (p.querySelector('.diag')) return;
     const mkv = /\.(mkv|avi)$/i.test(url);
-    toast(mkv ? 'Este vídeo está num formato que o navegador do iPhone não abre. Tente outro título.' : 'Não foi possível reproduzir este vídeo.', 5000);
+    const d = document.createElement('div');
+    d.className = 'diag';
+    d.innerHTML = `<b>Não foi possível reproduzir</b>
+      <p>${mkv ? 'Este vídeo está em formato MKV, que o Safari do iPhone não abre.' : esc(motivo)}</p>
+      <p style="font-size:12px;color:#aaa;word-break:break-all">${esc(url.replace(/\/([^/]+)\/([^/]+)\/(\d+\.\w+)$/, '/$1/•••/$3'))}</p>
+      <button class="btn" id="testar-direto">Testar link direto</button>`;
+    p.appendChild(d);
+    d.querySelector('#testar-direto').onclick = () => window.open(url, '_blank');
+  };
+  v.addEventListener('error', () => {
+    const c = v.error ? v.error.code : 0;
+    const motivos = { 1: 'Reprodução interrompida.', 2: 'Erro de rede ao buscar o vídeo (código 2).',
+      3: 'O vídeo chegou, mas não deu para decodificar (código 3).',
+      4: 'O navegador recusou o vídeo (código 4). Normalmente é bloqueio de segurança (http dentro de https) ou formato não suportado.' };
+    falhou(motivos[c] || 'Erro desconhecido.');
   });
+  if (hls) hls.on(Hls.Events.ERROR, (_, data) => { if (data.fatal) falhou('Erro HLS: ' + data.details); });
+  // Se depois de 20s não começou a tocar, mostra o diagnóstico também
+  setTimeout(() => { if (document.body.contains(p) && v.readyState < 2 && !v.error) falhou('O vídeo não começou depois de 20 segundos (código 0).'); }, 20000);
   v.play().catch(() => {});
   salvarTimer = setInterval(() => salvarProgresso(url, titulo, capa, v.currentTime, v.duration), 10000);
 }
