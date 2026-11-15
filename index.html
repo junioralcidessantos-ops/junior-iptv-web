@@ -459,8 +459,8 @@ const cartaoRank = (x, i) => `<button class="rank" data-abrir="${x.key}">${img(f
   <div class="lin"><div class="num">${i + 1}</div><div><div class="nome">${esc(x.nome)}</div>${x.nota ? `<div class="nota">${x.nota.toFixed(1)}/10</div>` : ''}</div></div></button>`;
 const cartaoCapa = x => `<button class="capa" data-abrir="${x.key}"><div class="caixa">${img(x.icone, 'img', x.nome)}${favs.has(x.key) ? `<span style="position:absolute;top:6px;right:6px" class="coracao">${ICO.coracao}</span>` : ''}</div><div class="nome">${esc(x.nome)}</div></button>`;
 const cartaoCanal = x => `<button class="canal" data-abrir="${x.key}"><div class="caixa">${x.icone ? `<img src="${esc(x.icone)}" loading="lazy" onerror="this.remove()">` : ''}</div><div class="nome">${esc(x.nome)}</div></button>`;
-const cartaoContinuar = r => `<button class="capa" data-continuar="${esc(r.url)}"><div class="caixa">${img(r.capa, 'img', r.titulo)}<div class="barrinha"><b style="width:${Math.min(100, r.pos / r.dur * 100)}%"></b></div></div>
-  <div class="nome">${esc(r.titulo)}</div><div class="resta">Restam ${Math.max(1, Math.round((r.dur - r.pos) / 60))} min</div></button>`;
+const cartaoContinuar = r => `<button class="capa" data-continuar="${esc(r.url)}"><div class="caixa">${img(r.capa, 'img', r.titulo)}${r.dur ? `<div class="barrinha"><b style="width:${Math.min(100, r.pos / r.dur * 100)}%"></b></div>` : ''}</div>
+  <div class="nome">${esc(r.titulo)}</div>${r.dur ? `<div class="resta">Restam ${Math.max(1, Math.round((r.dur - r.pos) / 60))} min</div>` : '<div class="resta">Assistido recentemente</div>'}</button>`;
 const fileira = (html) => `<div class="fileira">${html}</div>`;
 
 function barra(titulo, fixa = false) {
@@ -681,7 +681,30 @@ async function abrirSerie(s) {
 
 /* ---------------------------------------------------------- player */
 let hls = null, salvarTimer = null, atual = null;
+
+/* No iPhone/iPad o servidor manda o vídeo por um caminho que o Safari não deixa
+   tocar dentro da página. Então abrimos direto no player do próprio iPhone
+   (igual ao "Testar link direto", que funciona). */
+const ehIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const ehAppInstalado = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+
+function abrirNoIPhone(url, titulo, capa) {
+  // Guarda no "Continuar assistindo" para achar de novo depois
+  if (!url.includes('/live/')) {
+    const l = progresso().filter(r => r.url !== url);
+    const ant = progresso().find(r => r.url === url);
+    l.unshift({ url, titulo, capa, pos: ant ? ant.pos : 0, dur: ant ? ant.dur : 0, quando: Date.now() });
+    guardar('progresso', l.slice(0, 30));
+  }
+  const pos = url.includes('/live/') ? 0 : posicaoSalva(url);
+  const destino = pos > 0 ? url + '#t=' + Math.floor(pos) : url;
+  toast('Abrindo o player do iPhone…');
+  if (ehAppInstalado) location.href = destino;     // abre por cima do app, com botão "OK" para voltar
+  else window.open(destino, '_blank');               // no Safari normal, abre em outra aba
+}
+
 function abrirPlayer(url, titulo, capa) {
+  if (ehIOS) return abrirNoIPhone(url, titulo, capa);
   fecharPlayer();
   atual = { url, titulo, capa };
   const p = document.createElement('div');
